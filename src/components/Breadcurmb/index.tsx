@@ -1,34 +1,37 @@
-import { matchPath, useLocation } from "react-router-dom";
+import { useMatches } from "react-router-dom";
 
 import { Breadcrumb as CNBreadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-
-interface BreadcrumbItem {
-  label: string;
-  href: string;
-}
+import { cn } from "@/lib/utils";
 
 interface BreadcrumbProps {
-  breadcrumbs: BreadcrumbItem[];
+  className?: string;
+  separatorProps?: React.ComponentProps<typeof BreadcrumbSeparator>;
+  itemProps?: React.ComponentProps<typeof BreadcrumbItem>;
+  linkProps?: React.ComponentProps<typeof BreadcrumbLink>;
 }
 
-const Breadcrumb: React.FC<BreadcrumbProps> = ({ breadcrumbs }) => {
-  const location = useLocation();
+const Breadcrumb: React.FC<BreadcrumbProps> = ({ className, itemProps = {}, linkProps = {}, separatorProps = {} }) => {
+  const matches = useMatches();
+  const breadcrumbs = matches
+    .map(match => {
+      const handle = match.handle as { breadcrumb?: string } | undefined;
+      const breadcrumb = handle?.breadcrumb;
+      return breadcrumb ? { label: breadcrumb, href: match.pathname } : null;
+    })
+    .filter(Boolean);
   return (
     <CNBreadcrumb>
-      <BreadcrumbList className="capitalize">
-        {breadcrumbs.map(breadcrumb => {
-          const isMatch = matchPath(breadcrumb.href, location.pathname) || location.pathname.startsWith(breadcrumb.href);
-          return (
-            isMatch && (
-              <div className="flex" key={breadcrumb.href}>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbLink href={breadcrumb.href}>{breadcrumb.label}</BreadcrumbLink>
-                </BreadcrumbItem>
-              </div>
-            )
-          );
-        })}
+      <BreadcrumbList className={cn("capitalize", className)}>
+        {breadcrumbs.map(breadcrumb => (
+          <div className="flex" key={breadcrumb!.href}>
+            <BreadcrumbSeparator {...separatorProps} className="mr-1" />
+            <BreadcrumbItem {...itemProps}>
+              <BreadcrumbLink {...linkProps} href={breadcrumb!.href}>
+                {breadcrumb!.label}
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+          </div>
+        ))}
       </BreadcrumbList>
     </CNBreadcrumb>
   );

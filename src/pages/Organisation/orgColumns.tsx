@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import AppAvatar from "@/components/Avatar";
-import AppDropdown from "@/components/Dropdown";
-import { abbreviateName, ellipticalString, formatDateToDDMMYYYY } from "@/utils/formatters";
+import { abbreviateName, formatDateToDDMMYYYY } from "@/utils/formatters";
 import { Organisation } from "@/types";
+import Dropdown from "@/components/Dropdown";
 
 export const orgColumns: ColumnDef<Organisation>[] = [
   {
@@ -22,7 +22,8 @@ export const orgColumns: ColumnDef<Organisation>[] = [
     cell: ({ row }) => <Checkbox checked={row.getIsSelected()} onCheckedChange={value => row.toggleSelected(!!value)} aria-label="Select row" />,
     enableSorting: false,
     enableHiding: false,
-    enableColumnFilter: false
+    enableColumnFilter: false,
+    enableGlobalFilter: false
   },
   {
     accessorKey: "orgName",
@@ -47,7 +48,7 @@ export const orgColumns: ColumnDef<Organisation>[] = [
         }}
       >
         <AppAvatar avatarLink={row.original.logoUrl ?? ""} avatarAlt="@InnovateFuture" avatarPlaceholder={abbreviateName(row.getValue("orgName"))} size={7} />
-        <div className="ml-1 lowercase">{ellipticalString(row.getValue("orgName"), 15)}</div>
+        <div className="ml-1 lowercase truncate max-w-20">{row.getValue("orgName")}</div>
       </Button>
     ),
     enableColumnFilter: false
@@ -55,13 +56,14 @@ export const orgColumns: ColumnDef<Organisation>[] = [
   {
     accessorKey: "email",
     header: "Email",
-    cell: ({ row }) => <div className="lowercase">{ellipticalString(row.getValue("email"), 20)}</div>,
+    cell: ({ row }) => <div className="lowercase truncate max-w-40">{row.getValue("email")}</div>,
     enableColumnFilter: false
   },
   {
     accessorKey: "subscription",
     header: "Subscription",
-    cell: ({ row }) => <div className="capitalize">{row.getValue("subscription")}</div>
+    cell: ({ row }) => <div className="capitalize">{row.getValue("subscription")}</div>,
+    enableGlobalFilter: false
   },
   {
     accessorKey: "status",
@@ -70,7 +72,8 @@ export const orgColumns: ColumnDef<Organisation>[] = [
       <Badge variant="secondary">
         <div className="capitalize">{row.getValue("status")}</div>
       </Badge>
-    )
+    ),
+    enableGlobalFilter: false
   },
   {
     accessorKey: "createdAt",
@@ -86,7 +89,8 @@ export const orgColumns: ColumnDef<Organisation>[] = [
       const dateB = new Date(rowB.original.createdAt ?? "").getTime();
       return dateA - dateB;
     },
-    enableColumnFilter: false
+    enableColumnFilter: false,
+    enableGlobalFilter: false
   },
   {
     accessorKey: "updatedAt",
@@ -102,7 +106,8 @@ export const orgColumns: ColumnDef<Organisation>[] = [
       const dateB = new Date(rowB.original.updatedAt ?? "").getTime();
       return dateA - dateB;
     },
-    enableColumnFilter: false
+    enableColumnFilter: false,
+    enableGlobalFilter: false
   },
   {
     id: "actions",
@@ -113,7 +118,7 @@ export const orgColumns: ColumnDef<Organisation>[] = [
       const handleOperateDetail = ({ organisationDetail, isEdit = false }: { organisationDetail: Organisation; isEdit?: boolean }) => {
         console.log("organisationDetail: ", organisationDetail);
         console.log("isEdit", isEdit);
-        const path = isEdit ? `dashboard/organisation/${organisationDetail.orgId}/edit` : `dashboard/organisation/${organisationDetail.orgId}`;
+        const path = isEdit ? `organisations/${organisationDetail.orgId}/edit` : `organisations/${organisationDetail.orgId}`;
         window.location.href = path;
       };
 
@@ -138,14 +143,15 @@ export const orgColumns: ColumnDef<Organisation>[] = [
       ];
 
       return (
-        <AppDropdown<Organisation> item={organisationDetail} menuItems={menuItems}>
+        <Dropdown<Organisation> item={organisationDetail} menuItems={menuItems}>
           <Button variant="ghost" className="h-8 w-8 p-0">
             <span className="sr-only">Open menu</span>
             <MoreHorizontal />
           </Button>
-        </AppDropdown>
+        </Dropdown>
       );
     },
-    enableColumnFilter: false
+    enableColumnFilter: false,
+    enableGlobalFilter: false
   }
 ];

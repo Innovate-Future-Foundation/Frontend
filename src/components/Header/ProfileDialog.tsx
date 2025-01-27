@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Separator } from "@/components/ui/separator";
 import Avatar from "@/components/Avatar";
 import { FormFieldItem } from "@/components/FormField";
-import { abbreviateName, ellipticalString } from "@/utils/formatters";
+import { abbreviateName } from "@/utils/formatters";
 import { Form } from "../ui/form";
 
 const userProfileData = {
@@ -43,7 +43,7 @@ const userProfileInfoFormSchema = z.object({
     .string()
     .optional()
     .refine(value => !value || /^\+61 45\d{7}$/.test(value), {
-      message: "Phone number must start with +61 45 and be followed by 7 digits."
+      message: "Phone number must start with +61 4 and be followed by 8 digits."
     })
 });
 
@@ -83,8 +83,8 @@ const ProfileDialog: React.FC<{ children: ReactNode }> = ({ children }) => {
         <div className="p-8 pt-6">
           <DialogHeader>
             <div className="flex-col flex items-start">
-              <DialogTitle>{ellipticalString(userProfileInfoForm.watch("name"), 20)}</DialogTitle>
-              <DialogDescription>{ellipticalString(userProfileInfoForm.watch("email"), 20)}</DialogDescription>
+              <DialogTitle className="truncate max-w-20">{userProfileInfoForm.watch("name")}</DialogTitle>
+              <DialogDescription className="truncate max-w-40">{userProfileInfoForm.watch("email")}</DialogDescription>
             </div>
           </DialogHeader>
           <Separator className="my-4" />

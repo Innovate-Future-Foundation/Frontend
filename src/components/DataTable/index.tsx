@@ -9,22 +9,31 @@ import {
   getSortedRowModel,
   useReactTable,
   ColumnFiltersState,
-  PaginationState
+  PaginationState,
+  getExpandedRowModel,
+  ExpandedState
 } from "@tanstack/react-table";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "../ui/dropdown-menu";
-import { Button } from "../ui/button";
 import { ChevronDown, Filter, Search } from "lucide-react";
-import { Input } from "../ui/input";
+
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ITEMS_PER_PAGE } from "@/constants/appConfig";
-import Pagenation from "../Pagenation";
+import Pagenation from "@/components/Pagenation";
+import { TableBaseType } from "@/types/tablebase";
+import { Card } from "../ui/card";
+import clsx from "clsx";
 
-interface DataTableProps<T> {
+interface DataTableProps<T extends object> {
   columns: ColumnDef<T>[];
-  data: T[];
+  data: TableBaseType<T>[];
+  searchPlaceholder: string;
+  locationListType?: LocationListType;
 }
+export type LocationListType = "cards" | "table";
 
-const DataTable = <T,>({ columns, data }: DataTableProps<T>) => {
+const DataTable = <T extends object>({ columns, data, searchPlaceholder, locationListType = "table" }: DataTableProps<T>) => {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = React.useState({});
@@ -33,13 +42,17 @@ const DataTable = <T,>({ columns, data }: DataTableProps<T>) => {
     pageSize: ITEMS_PER_PAGE
   });
   const [globalFilter, setGlobalFilter] = React.useState("");
+  const [expanded, setExpanded] = React.useState<ExpandedState>({});
 
-  const table = useReactTable<T>({
+  const table = useReactTable<TableBaseType<T>>({
     data,
     columns,
+    onExpandedChange: setExpanded,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onPaginationChange: setPagination,
+    getSubRows: row => row.children,
+    getExpandedRowModel: getExpandedRowModel(),
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -50,10 +63,12 @@ const DataTable = <T,>({ columns, data }: DataTableProps<T>) => {
       columnFilters,
       rowSelection,
       globalFilter,
-      pagination
+      pagination,
+      expanded
     },
     onGlobalFilterChange: setGlobalFilter,
-    manualPagination: false
+    manualPagination: false,
+    manualFiltering: false
   });
 
   return (
@@ -104,7 +119,7 @@ const DataTable = <T,>({ columns, data }: DataTableProps<T>) => {
         {/* Search */}
         <div className="relative">
           <Input
-            placeholder="search by name or email"
+            placeholder={searchPlaceholder}
             value={(table.getState().globalFilter as string) ?? ""}
             onChange={event => {
               setGlobalFilter(String(event.target.value));
@@ -116,43 +131,73 @@ const DataTable = <T,>({ columns, data }: DataTableProps<T>) => {
           </span>
         </div>
       </div>
-
       {/* Table */}
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map(headerGroup => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map(header => {
-                  return <TableHead key={header.id}>{header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}</TableHead>;
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
+      {locationListType === "table" && (
+        <div className="rounded-t-md overflow-hidden">
+          <Table>
+            <TableHeader className="bg-accent">
+              {table.getHeaderGroups().map(headerGroup => (
+                <TableRow key={headerGroup.id} className="border-none ">
+                  {headerGroup.headers.map(header => {
+                    return (
+                      <TableHead className="text-primary-foreground50 text-sm " key={header.id}>
+                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                      </TableHead>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map(row => (
+                  <TableRow key={row.id} data-state={row.getIsSelected() && "selected"} className={clsx(`${row.depth != 0 && "bg-secondary-green"}`)}>
+                    {row.getVisibleCells().map(cell => (
+                      <TableCell className="h-18 font-medium" key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-24 text-center">
+                    No results.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+          <div className="flex items-center justify-end space-x-2 py-4">
+            <div className="flex-1 text-sm text-primary-foreground50">
+              {table.getFilteredSelectedRowModel().rows.length} of {table.getFilteredRowModel().rows.length} row(s) selected.
+            </div>
+          </div>
+        </div>
+      )}
+      {/* cards */}
+      {locationListType === "cards" && (
+        <div className="rounded-md mb-4">
+          <div className="grid lg:grid-cols-4 gap-2 md:grid-cols-3 sm:grid-cols-2 grid-cols-1">
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map(row => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
-                  {row.getVisibleCells().map(cell => (
-                    <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
-                  ))}
-                </TableRow>
+                <Card
+                  key={row.id}
+                  className={
+                    "w-full border-primary-light rounded-md overflow-hidden hover:scale-102 hover:-translate-y-1 hover:shadow-md transition-all duration-200 ease-out hover:bg-accent"
+                  }
+                >
+                  {row.getVisibleCells().map(cell => {
+                    return <div key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>;
+                  })}
+                </Card>
               ))
             ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
-                </TableCell>
-              </TableRow>
+              <div className="h-24 text-center">No results.</div>
             )}
-          </TableBody>
-        </Table>
-      </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of {table.getFilteredRowModel().rows.length} row(s) selected.
+          </div>
         </div>
-      </div>
+      )}
       <Pagenation
         currentPage={table.getState().pagination.pageIndex + 1}
         totalItems={table.getFilteredRowModel().rows.length}
