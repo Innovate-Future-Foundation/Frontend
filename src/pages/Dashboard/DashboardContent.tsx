@@ -6,6 +6,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import Sidebar, { SidebarItem } from "./Sidebar";
 import Breadcrumb from "@/components/Breadcurmb";
 import { Role } from "@/types/role";
+import InviteModal, { FormInputs } from "./components/InviteModal";
 
 interface DashboardMenuItem {
   sidebarItem: SidebarItem;
@@ -67,6 +68,12 @@ const DashboardContent: React.FC<Role> = ({ ...role }) => {
         </div>
         <div className="px-4 pt-12 z-0">
           <Outlet />
+          <InviteModal
+            roleInvited="student"
+            onSubmit={async (data: FormInputs) => {
+              setTimeout(() => console.log("submit successfully", data), 1000);
+            }}
+          />
         </div>
       </main>
     </SidebarProvider>
